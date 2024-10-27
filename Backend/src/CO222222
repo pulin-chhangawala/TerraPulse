@@ -1,0 +1,114 @@
+import pandas as pd
+import argparse
+import os
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Hardcoded dictionary for object emissions
+OBJECT_EMISSIONS = {
+    "Aluminum": 11.5,
+    "Plastic": 4.0,
+    "Paper": 2.25,
+    "Steel": 1.8,
+    "Glass": 0.9,
+    "Cotton": 2.5,
+    "Concrete": 0.6,
+    "Cardboard": 0.9,
+    "Polyester": 3.3,
+    "Rubber": 3.5,
+    "Wood": 0.9,
+    "Food Waste": 0.4,
+    "Batteries": 2.1,
+    "Electronics": 7.0,
+    "Ceramics": 1.7,
+    "Textiles": 4.0,
+    "Tires": 0.7,
+    "Furniture (Wood-based)": 2.5,
+    "Plasterboard": 0.4,
+    "Acrylic": 3.5,
+    "Cement": 0.8,
+    "Bamboo": 0.5,
+    "Leather": 9.0,
+    "Ink": 2.0,
+    "Styrofoam": 2.0,
+    "PVC": 2.0,
+    "Foam": 3.0,
+    "Nylon": 5.0,
+    "Tin": 1.0,
+    "Copper": 3.5,
+    "Wool": 3.5,
+    "Glass Fiber": 6.0,
+    "Biodegradable Plastics": 2.5,
+    "Carbon Fiber": 20.0,
+    "Synthetics (e.g., fleece)": 3.5,
+    "Composite Materials": 2.5,
+    "Soda Cans": 1.0,
+    "Plastic Bags": 2.5,
+    "Dishware (ceramic)": 1.5,
+    "Light Bulbs (incandescent)": 0.7,
+    "Light Bulbs (LED)": 0.2,
+    "Paint": 1.6,
+    "Detergent": 1.2,
+    "Cleaning Products": 2.0,
+    "Metal Containers": 2.0,
+    "Petroleum Jelly": 3.0,
+    "Adhesives": 1.5,
+    "Mops and Brooms (plastic)": 1.8,
+    "Shower Curtains (plastic)": 2.5,
+    "Toilet Paper": 1.8,
+    "Cling Film": 3.0,
+    "Food Packaging": 2.0,
+}
+
+def check_file_exists(file_path):
+    if not os.path.isfile(file_path):
+        logging.error(f"File not found: {file_path}")
+        raise FileNotFoundError(f"Error: The file {file_path} does not exist.")
+
+def calculate_car_emissions(csv_file, make, model, kilometers):
+    check_file_exists(csv_file)
+    df = pd.read_csv(csv_file)
+
+    make = make.lower()
+    model = model.lower()
+    filtered_df = df[(df['Make'].str.lower() == make) & (df['Model'].str.lower() == model)]
+
+    if filtered_df.empty:
+        return None
+    else:
+        co2_emissions_per_km = filtered_df['CO2 Emissions(g/km)'].values[0] / 1000
+        total_emissions = co2_emissions_per_km * kilometers
+        return f"Total CO2 emissions for {kilometers} km driven in a {make.title()} {model.title()}: {total_emissions:.2f} kg"
+
+def calculate_object_emissions(object_name, amount):
+    object_name = object_name.title()  # Normalize case for searching
+    co2_emissions_per_kg = OBJECT_EMISSIONS.get(object_name)
+
+    if co2_emissions_per_kg is None:
+        return None
+    else:
+        total_emissions = co2_emissions_per_kg * amount
+        return f"Total CO2 emissions for {amount} kg of {object_name}: {total_emissions:.2f} kg"
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Calculate CO2 emissions based on car make/model or object.")
+    parser.add_argument("first_arg", type=str, help="Car make/model or object name.")
+    parser.add_argument("second_arg", type=str, help="Car model (if first_arg is a make) or amount (if first_arg is an object).")
+    parser.add_argument("kilometers", type=float, nargs='?', default=None, help="The distance driven in kilometers (optional for objects).")
+    parser.add_argument("car_csv_file", type=str, help="Path to the CSV file containing car data.")
+
+    args = parser.parse_args()
+
+    car_emissions = calculate_car_emissions(args.car_csv_file, args.first_arg, args.second_arg, args.kilometers)
+
+    if car_emissions:
+        print(car_emissions)
+    else:
+        object_emissions = calculate_object_emissions(args.first_arg, float(args.second_arg))
+
+        if object_emissions:
+            print(object_emissions)
+        else:
+            print("Error: No matching car or object found.")
